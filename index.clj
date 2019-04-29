@@ -102,9 +102,72 @@
 ; (dorun coll) run coll not keep in memory
 (dorun x)
 
+(first (.getBytes "hello"))
+(rest (System/getProperties))
+
+; clojure not auto convert seq to coll
+(reverse "hello")
+(apply str (reverse "hello"))
+
+; (re-seq regexp string)
+(re-seq #"\w+" "the quick brown fork")
+(map clojure.string/upper-case (re-seq #"\w+" "the quick brown fork"))
+
+(import 'java.io.File)
+(.listFiles (File. "."))
+(seq (.listFiles (File. ".")))
+(map #(.getName %) (seq (.listFiles (File. "."))))
+
+(require '[clojure.java.io :refer [reader]])
+(take 2 (line-seq (eader "tokine/clojure-learning/index.clj")))
+(with-open [rdr (reader "tokine/clojure-learning/index.clj")] (count (line-seq rdr)))
+
+; (peek coll) same as first
+(peek '(1 2 3))
+; (pop coll) not same as rest. pop will throw e if seq is empty
+(pop '(1 2 3))
+(pop '())
+
+; vector
+(get [:a :b :c] 1)
+([:a :b :c] 1)
+
+(assoc [0 1 2 3 4] 2 :two)
+
+; (subvec avec start end?)
+(subvec [0 1 2 3 4] 3)
+
+; function use in map
+(def mapA {:a 1 :b 2 :c 3})
+(keys mapA)
+(vals mapA)
+
+; (get map key value-if-not-found?)
+(get mapA :d)
+(mapA :a)
+(:a mapA)
+
+; (contains? map key) -- Object.hasOwnProperties()
+(contains? mapA :d)
+
+(assoc mapA :e 5)
+(dissoc mapA :b 5)
+; pick
+(select-keys mapA [:a :b])
+; Object.assign({}, _, _)
+(merge mapA {:c 8 :e 5})
+
+; function on sets
+(def setA #{"A" "B" "C"})
+(def setB #{"B" "C" "D"})
+(clojure.set/union setA setB)
+(clojure.set/intersection setA setB)
+(clojure.set/difference setA setB)
+(clojure.set/select #(= 1 (count %)) setA)
+
 (defmacro hello [x] '(+ 1 2))
 (hello 0)
-(defn unless [expr form](if expr nil form))
+(defn unless [expr form] (if expr nil form))
 (unless false (println ​ "this should print" ​))
 
 (string? "hello ")
