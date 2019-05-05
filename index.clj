@@ -218,11 +218,136 @@
   (dosync (alter messages conj msg)))
 (add-messages (->Message "B" "b1"))
 (add-messages (->Message "C" "c1"))
+; (commute ref update-fn & args...)
+(defn add-messages-commute [msg]
+  (dosync (commute messages conj msg)))
+
+; valid
+(defn valid-messages? [msg]
+  (and (:sender msg) (:text msg)))
+(def valid-message-list #(every? valid-messages? %))
+(def messages (ref () :validator valid-message-list))
+(add-messages "not a valid message")
+@messages
+(add-messages (->Message "D" "d1"))
+
+; (atom initial-state options?)
+; options: :validator validator-fn :meta metadata-map
+(def current-track (atom "TEST ATOM"))
+(deref current-track)
+@current-track
+; (reset! an-atom newval)
+; atom dont need dosync, and can't modify multi value. is diff with ref
+(reset! current-track "NEW ATOM VALUE")
+; (swap! an-atom f & args)
+(def current-track (atom {:title "ABC" :composer "DEF"}))
+(swap! current-track assoc :title "CHANGE TITLE")
+
+; (agent initial-state options*)
+; options: :validator validator-fn :meta metadata-map :error-handler handler-fn :error-mode mode-keyword(:continue or :fail) 
+(def counter (agent 0))
+; (send agent update-fn & args)
+(send counter inc)
+@counter
+; (await & agents)
+; (await-for timeout-millis & agents)
+; await will FOREVER wait for result
+(def counter (agent 0 :validator number?))
+(send counter (fn [_] "boo"))
+(agent-error counter)
+(defn handler [agent err]
+  (println "ERR!" (.getMessage err)))
+(def counter2 (agent 0 :validator number? :error-handler handler))
+(send counter2 (fn [_] "boo"))
+(send counter2 inc)
+@counter2
+
+
+(def ^:dynamic foo 10)
+foo
+; create new thread read foo
+(.start (Thread. (fn [](println foo))))
+
+; (binding [bindings] & body)
+(binding [foo 42] foo)
+(defn print-foo [] (println foo))
+(let [foo "let foo"] (print-foo))
+(binding [foo "binding foo"] (print-foo))
+
+(defn ^:dynamic slow-double [n]
+  (Thread/sleep 100)
+  (* n 2))
+(defn calls-slow-double []
+  (map slow-double [1 2 1 2 1 2]))
+(time (dorun (calls-slow-double)))
+; (memoize function) cache result
+(defn demo-memomize []
+  (time
+   (dorun 
+    (binding [slow-double (memoize slow-double)]
+      (calls-slow-double)))))
+(demo-memomize)
+
+; (set! var-symbol new-value)
+
+
+; page 466 clojure snake game
+
+; skip interface protocol....
+
+; macro
+(if (= 1 1) (println "yep, math still work today"))
+(defn unless [expr form]
+  (if expr nil form))
+; got wrong because param will first run
+(unless false (println "this should print"))
+(unless true (println "this should not print"))
+
+; (defmacro name doc-string? attr-map? [params*] body)
+(defmacro unless [expr form]
+  (list 'if expr nil form))
+
+; (macroexpand-1 form)
+(macroexpand-1 '(unless false (println "this should print")))
+(macroexpand-1 '(.. arm getHand getFinger))
+(macroexpand '(.. arm getHand getFinger))
+(macroexpand '(and 1 2 3))
+
+; multimethods
+; (defmulti name dispatch-fn)
+(defmulti my-print class)
+; (defmethod name dispatch-val & fn-tail)
+(defmethod my-print String [s] (.write *out* s))
+(my-print "stu")
+(defmethod my-print nil [s] (.write *out* "nil"))
+(defmethod my-print Number [n] (.write *out* (.toString n)))
+(my-print 42)
+(isa? Long Number)
+(defmethod my-print :default [s]
+  (.write *out* "#<")
+  (.write *out* (.toString s))
+  (.write *out* ">"))
+(my-print (java.sql.Date. 0))
+; (prefer-method multi-name loved-dispatch dissed-dispatch)
+(prefer-method my-print clojure.lang.IPersistentVector java.util.Collection)
+(my-print (take 6 (cycle [1 2 3])))
+; (alias short-name-symbol namespace-symbol)
+; (alias 'acc 'examples.multimethods.account)
+
+(require '[clojure.inspector :refer [inspect inspect-tree]])
+(inspect-tree (System/getProperties))
+(inspect-tree {:clojure {:creator "Rich" :runs-on-jvm true}})
+
+(require '[clojure.test :refer [is]])
+(is (string? 10))
+
+(defn say-hi [] (println "Hello from thread" (.getName (Thread/currentThread))))
+(dotimes [_ 3] (.start (Thread. say-hi)))
 
 (defmacro hello [x] '(+ 1 2))
 (hello 0)
 (defn unless [expr form] (if expr nil form))
-(unless false (println ​ "this should print" ​))
+(unless false (println ​ "this should print"​))
 
 (string? "hello ")
 (keyword? :hello)
